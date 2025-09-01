@@ -1,0 +1,121 @@
+import java.math.BigInteger;
+import java.util.ArrayList;
+import java.util.List;
+
+public class PolynomialFromBothTestCases {
+
+    // Convert base-n string to decimal BigInteger
+    public static BigInteger baseNToDecimal(String valueStr, int base) {
+        return new BigInteger(valueStr, base);
+    }
+
+    // Multiply polynomial represented by polyCoeffs by (x - root)
+    public static List<BigInteger> multiplyPolynomial(List<BigInteger> polyCoeffs, BigInteger root) {
+        int deg = polyCoeffs.size() - 1;
+        List<BigInteger> newCoeffs = new ArrayList<>();
+        for (int i = 0; i <= deg + 1; i++)
+            newCoeffs.add(BigInteger.ZERO);
+
+        for (int i = 0; i <= deg; i++) {
+            newCoeffs.set(i, newCoeffs.get(i).add(polyCoeffs.get(i)));
+            newCoeffs.set(i + 1, newCoeffs.get(i + 1).add(polyCoeffs.get(i).multiply(root.negate())));
+        }
+        return newCoeffs;
+    }
+
+    // Print BigInteger in scientific notation: x * 10^y
+    public static void printScientific(BigInteger val) {
+        String s = val.toString();
+        boolean negative = false;
+        if (s.startsWith("-")) {
+            negative = true;
+            s = s.substring(1);
+        }
+        if (s.length() == 1) {
+            System.out.print((negative ? "-" : "") + s + " * 10^0");
+        } else {
+            System.out.print((negative ? "-" : "") + s.charAt(0));
+            if (s.length() > 1) {
+                System.out.print("." + s.substring(1));
+            }
+            System.out.print(" * 10^" + (s.length() - 1));
+        }
+        System.out.println();
+    }
+
+    // Process a single test case given base-n roots; returns polynomial coefficients
+    public static List<BigInteger> processTestCase(String[][] rootsBaseN) {
+        List<BigInteger> rootsDecimal = new ArrayList<>();
+        for (String[] root : rootsBaseN) {
+            int base = Integer.parseInt(root[0]);
+            String val = root[1];
+            rootsDecimal.add(baseNToDecimal(val, base));
+        }
+
+        List<BigInteger> polyCoeffs = new ArrayList<>();
+        polyCoeffs.add(BigInteger.ONE);
+
+        for (BigInteger root : rootsDecimal) {
+            polyCoeffs = multiplyPolynomial(polyCoeffs, root);
+        }
+        return polyCoeffs;
+    }
+
+    public static void main(String[] args) {
+
+        // Test Case 1 (first 3 roots of provided case 1)
+        String[][] testCase1Roots = {
+            {"10", "4"},
+            {"2", "111"},
+            {"10", "12"}
+        };
+
+        // Test Case 2 (first 7 roots of provided case 2)
+        String[][] testCase2Roots = {
+            {"6",  "13444211440455345511"},
+            {"15", "aed7015a346d635"},
+            {"15", "6aeeb69631c227c"},
+            {"16", "e1b5e05623d881f"},
+            {"8",  "316034514573652620673"},
+            {"3",  "2122212201122002221120200210011020220200"},
+            {"3",  "20120221122211000100210021102001201112121"}
+        };
+
+        // Process and print Test Case 1
+        System.out.println("Polynomial coefficients for Test Case 1:");
+        List<BigInteger> coeffs1 = processTestCase(testCase1Roots);
+        for (int i = 0; i < coeffs1.size(); i++) {
+            System.out.print("a" + i + " = ");
+            printScientific(coeffs1.get(i));
+        }
+
+        System.out.println();
+
+        // Process and print Test Case 2
+        System.out.println("Polynomial coefficients for Test Case 2:");
+        List<BigInteger> coeffs2 = processTestCase(testCase2Roots);
+        for (int i = 0; i < coeffs2.size(); i++) {
+            System.out.print("a" + i + " = ");
+            printScientific(coeffs2.get(i));
+        }
+
+    }
+}
+
+
+
+Polynomial coefficients for Test Case 1:
+a0 = 1 * 10^0
+a1 = -2.3 * 10^1
+a2 = 1.60 * 10^2
+a3 = -3.36 * 10^2
+
+Polynomial coefficients for Test Case 2:
+a0 = 1 * 10^0
+a1 = -4.2744980544161216684 * 10^19
+a2 = 4.91196794452036188711731121904789704897 * 10^38
+a3 = -1.750015510399802659018619826489058347218651671742010084868 * 10^57
+a4 = 1.896953661197784192851619304941891141217656636090734451478146380932600517747 * 10^75
+a5 = -6.59422982387496339364177349268600659447242228929995566267403461578162207055624230394726655964 * 10^92
+a6 = 6.9242722857828950075440340313513423414802084042502172234667464543624790120201149174548909532528617931486933771 * 10^109
+a7 = -6.8251311922474227931291131263381395876233236117406283186409459444825993094514406289867143593522348021427278506790766073198900 * 10^124
