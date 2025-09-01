@@ -1,121 +1,184 @@
-import java.math.BigInteger;
-import java.util.ArrayList;
-import java.util.List;
+#include <iostream>
+#include <vector>
+#include <string>
+#include <cmath>
+#include <map>
+#include <fstream>
+#include <iomanip>
 
-public class PolynomialFromBothTestCases {
-
-    // Convert base-n string to decimal BigInteger
-    public static BigInteger baseNToDecimal(String valueStr, int base) {
-        return new BigInteger(valueStr, base);
-    }
-
-    // Multiply polynomial represented by polyCoeffs by (x - root)
-    public static List<BigInteger> multiplyPolynomial(List<BigInteger> polyCoeffs, BigInteger root) {
-        int deg = polyCoeffs.size() - 1;
-        List<BigInteger> newCoeffs = new ArrayList<>();
-        for (int i = 0; i <= deg + 1; i++)
-            newCoeffs.add(BigInteger.ZERO);
-
-        for (int i = 0; i <= deg; i++) {
-            newCoeffs.set(i, newCoeffs.get(i).add(polyCoeffs.get(i)));
-            newCoeffs.set(i + 1, newCoeffs.get(i + 1).add(polyCoeffs.get(i).multiply(root.negate())));
+// Convert string in base 'base' to decimal
+long long from_base(const std::string& s, int base) {
+    long long result = 0;
+    for (char c : s) {
+        int digit;
+        if (c >= '0' && c <= '9') {
+            digit = c - '0';
+        } else if (c >= 'a' && c <= 'z') {
+            digit = c - 'a' + 10;
+        } else if (c >= 'A' && c <= 'Z') {
+            digit = c - 'A' + 10;
         }
-        return newCoeffs;
+        result = result * base + digit;
     }
+    return result;
+}
 
-    // Print BigInteger in scientific notation: x * 10^y
-    public static void printScientific(BigInteger val) {
-        String s = val.toString();
-        boolean negative = false;
-        if (s.startsWith("-")) {
-            negative = true;
-            s = s.substring(1);
-        }
-        if (s.length() == 1) {
-            System.out.print((negative ? "-" : "") + s + " * 10^0");
-        } else {
-            System.out.print((negative ? "-" : "") + s.charAt(0));
-            if (s.length() > 1) {
-                System.out.print("." + s.substring(1));
+// Gaussian elimination for system of equations with improved numerical stability
+std::vector<long double> gauss(std::vector<std::vector<long double>> mat, std::vector<long double> y) {
+    int n = y.size();
+    
+    // Forward elimination with partial pivoting
+    for (int i = 0; i < n; ++i) {
+        // Find the row with largest pivot
+        int max_row = i;
+        for (int k = i + 1; k < n; ++k) {
+            if (fabs(mat[k][i]) > fabs(mat[max_row][i])) {
+                max_row = k;
             }
-            System.out.print(" * 10^" + (s.length() - 1));
         }
-        System.out.println();
+        
+        // Swap rows if needed
+        if (max_row != i) {
+            std::swap(mat[i], mat[max_row]);
+            std::swap(y[i], y[max_row]);
+        }
+        
+        // Eliminate column
+        for (int k = i + 1; k < n; ++k) {
+            if (fabs(mat[i][i]) > 1e-15) {  // Avoid division by very small numbers
+                long double factor = mat[k][i] / mat[i][i];
+                for (int j = i; j < n; ++j) {
+                    mat[k][j] -= factor * mat[i][j];
+                }
+                y[k] -= factor * y[i];
+            }
+        }
     }
-
-    // Process a single test case given base-n roots; returns polynomial coefficients
-    public static List<BigInteger> processTestCase(String[][] rootsBaseN) {
-        List<BigInteger> rootsDecimal = new ArrayList<>();
-        for (String[] root : rootsBaseN) {
-            int base = Integer.parseInt(root[0]);
-            String val = root[1];
-            rootsDecimal.add(baseNToDecimal(val, base));
+    
+    // Back substitution
+    std::vector<long double> x(n);
+    for (int i = n - 1; i >= 0; --i) {
+        x[i] = y[i];
+        for (int j = i + 1; j < n; ++j) {
+            x[i] -= mat[i][j] * x[j];
         }
-
-        List<BigInteger> polyCoeffs = new ArrayList<>();
-        polyCoeffs.add(BigInteger.ONE);
-
-        for (BigInteger root : rootsDecimal) {
-            polyCoeffs = multiplyPolynomial(polyCoeffs, root);
-        }
-        return polyCoeffs;
+        x[i] /= mat[i][i];
     }
+    
+    return x;
+}
 
-    public static void main(String[] args) {
-
-        // Test Case 1 (first 3 roots of provided case 1)
-        String[][] testCase1Roots = {
-            {"10", "4"},
-            {"2", "111"},
-            {"10", "12"}
-        };
-
-        // Test Case 2 (first 7 roots of provided case 2)
-        String[][] testCase2Roots = {
-            {"6",  "13444211440455345511"},
-            {"15", "aed7015a346d635"},
-            {"15", "6aeeb69631c227c"},
-            {"16", "e1b5e05623d881f"},
-            {"8",  "316034514573652620673"},
-            {"3",  "2122212201122002221120200210011020220200"},
-            {"3",  "20120221122211000100210021102001201112121"}
-        };
-
-        // Process and print Test Case 1
-        System.out.println("Polynomial coefficients for Test Case 1:");
-        List<BigInteger> coeffs1 = processTestCase(testCase1Roots);
-        for (int i = 0; i < coeffs1.size(); i++) {
-            System.out.print("a" + i + " = ");
-            printScientific(coeffs1.get(i));
-        }
-
-        System.out.println();
-
-        // Process and print Test Case 2
-        System.out.println("Polynomial coefficients for Test Case 2:");
-        List<BigInteger> coeffs2 = processTestCase(testCase2Roots);
-        for (int i = 0; i < coeffs2.size(); i++) {
-            System.out.print("a" + i + " = ");
-            printScientific(coeffs2.get(i));
-        }
-
+// Simple JSON parser for this specific format
+std::map<std::string, std::string> parse_json(const std::string& json_str) {
+    std::map<std::string, std::string> result;
+    
+    // This is a simple parser for the specific JSON format given
+    // In a real application, you'd use a proper JSON library
+    
+    size_t pos = 0;
+    while ((pos = json_str.find("\"", pos)) != std::string::npos) {
+        size_t key_start = pos + 1;
+        size_t key_end = json_str.find("\"", key_start);
+        if (key_end == std::string::npos) break;
+        
+        std::string key = json_str.substr(key_start, key_end - key_start);
+        
+        // Skip to the value
+        pos = json_str.find("\"", key_end + 1);
+        if (pos == std::string::npos) break;
+        
+        size_t value_start = pos + 1;
+        size_t value_end = json_str.find("\"", value_start);
+        if (value_end == std::string::npos) break;
+        
+        std::string value = json_str.substr(value_start, value_end - value_start);
+        result[key] = value;
+        
+        pos = value_end + 1;
     }
+    
+    return result;
+}
+
+int main() {
+    // Test Case 1
+    std::cout << "=== TEST CASE 1 ===" << std::endl;
+    
+    // Manually input the first test case data
+    std::vector<int> x1 = {1, 2, 3, 6};
+    std::vector<long long> y1;
+    
+    y1.push_back(from_base("4", 10));      // "1": base 10, value "4" -> 4
+    y1.push_back(from_base("111", 2));     // "2": base 2, value "111" -> 7
+    y1.push_back(from_base("12", 10));     // "3": base 10, value "12" -> 12
+    y1.push_back(from_base("213", 4));     // "6": base 4, value "213" -> 39
+    
+    int k1 = 3;  // minimum points needed
+    
+    // Build Vandermonde matrix for first k points
+    std::vector<std::vector<long double>> V1(k1, std::vector<long double>(k1));
+    for (int i = 0; i < k1; ++i) {
+        long double x_power = 1.0L;
+        for (int j = 0; j < k1; ++j) {
+            V1[i][j] = x_power;
+            x_power *= x1[i];
+        }
+    }
+    
+    std::vector<long double> y1_ld(k1);
+    for (int i = 0; i < k1; ++i) {
+        y1_ld[i] = static_cast<long double>(y1[i]);
+    }
+    
+    std::vector<long double> coeffs1 = gauss(V1, y1_ld);
+    long long secret1 = static_cast<long long>(round(coeffs1[0]));
+    
+    std::cout << "Secret (constant term): " << secret1 << std::endl;
+    
+    // Test Case 2
+    std::cout << "\n=== TEST CASE 2 ===" << std::endl;
+    
+    std::vector<int> x2 = {1, 2, 3, 4, 5, 6, 7};  // First 7 x values
+    std::vector<long long> y2;
+    
+    y2.push_back(from_base("13444211440455345511", 6));    // "1"
+    y2.push_back(from_base("aed7015a346d635", 15));        // "2"
+    y2.push_back(from_base("6aeeb69631c227c", 15));        // "3"
+    y2.push_back(from_base("e1b5e05623d881f", 16));        // "4"
+    y2.push_back(from_base("316034514573652620673", 8));   // "5"
+    y2.push_back(from_base("2122212201122002221120200210011020220200", 3));  // "6"
+    y2.push_back(from_base("20120221122211000100210021102001201112121", 3)); // "7"
+    
+    int k2 = 7;  // minimum points needed
+    
+    // Build Vandermonde matrix
+    std::vector<std::vector<long double>> V2(k2, std::vector<long double>(k2));
+    for (int i = 0; i < k2; ++i) {
+        long double x_power = 1.0L;
+        for (int j = 0; j < k2; ++j) {
+            V2[i][j] = x_power;
+            x_power *= x2[i];
+        }
+    }
+    
+    std::vector<long double> y2_ld(k2);
+    for (int i = 0; i < k2; ++i) {
+        y2_ld[i] = static_cast<long double>(y2[i]);
+    }
+    
+    std::vector<long double> coeffs2 = gauss(V2, y2_ld);
+    long long secret2 = static_cast<long long>(round(coeffs2[0]));
+    
+    std::cout << "Secret (constant term): " << secret2 << std::endl;
+    
+    // Print converted y values for verification
+    std::cout << "\nConverted y values for Test Case 2:" << std::endl;
+    for (int i = 0; i < k2; ++i) {
+        std::cout << "y[" << (i+1) << "] = " << y2[i] << std::endl;
+    }
+    
+    return 0;
 }
 
 
 
-Polynomial coefficients for Test Case 1:
-a0 = 1 * 10^0
-a1 = -2.3 * 10^1
-a2 = 1.60 * 10^2
-a3 = -3.36 * 10^2
-
-Polynomial coefficients for Test Case 2:
-a0 = 1 * 10^0
-a1 = -4.2744980544161216684 * 10^19
-a2 = 4.91196794452036188711731121904789704897 * 10^38
-a3 = -1.750015510399802659018619826489058347218651671742010084868 * 10^57
-a4 = 1.896953661197784192851619304941891141217656636090734451478146380932600517747 * 10^75
-a5 = -6.59422982387496339364177349268600659447242228929995566267403461578162207055624230394726655964 * 10^92
-a6 = 6.9242722857828950075440340313513423414802084042502172234667464543624790120201149174548909532528617931486933771 * 10^109
-a7 = -6.8251311922474227931291131263381395876233236117406283186409459444825993094514406289867143593522348021427278506790766073198900 * 10^124
